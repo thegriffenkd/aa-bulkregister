@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aa-bulkregister"
+version = "0.1.0"
+description = "Bulk-register characters with existing ESI tokens into Member Audit or CorpTools"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["bulkregister*"]
+
+[tool.setuptools.package-data]
+bulkregister = ["templates/bulkregister/*.html"]

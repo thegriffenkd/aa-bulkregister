@@ -1,0 +1,81 @@
+{% extends "allianceauth/base-bs5.html" %}
+
+{% block page_title %}Bulk Register{% endblock %}
+{% block header_nav_brand %}Bulk Register{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <ul class="nav nav-tabs mb-3">
+    {% for t in targets %}
+      <li class="nav-item">
+        <a class="nav-link {% if t.key == target.key %}active{% endif %}"
+           href="?target={{ t.key }}">{{ t.label }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <div class="row mb-3">
+    <div class="col-auto"><span class="badge text-bg-success fs-6">Ready: {{ ready|length }}</span></div>
+    <div class="col-auto"><span class="badge text-bg-secondary fs-6">Already added: {{ registered|length }}</span></div>
+    <div class="col-auto"><span class="badge text-bg-warning fs-6">Need new token: {{ missing|length }}</span></div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">Ready to add to {{ target.label }}</div>
+    <div class="card-body">
+      {% if ready %}
+        <form method="post" action="{% url 'bulkregister:register_all' %}">
+          {% csrf_token %}
+          <input type="hidden" name="target" value="{{ target.key }}">
+          <div class="mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAll(true)">Select all</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAll(false)">Select none</button>
+          </div>
+          <div class="row g-2 mb-3">
+            {% for c in ready %}
+              <div class="col-sm-6 col-md-4 col-lg-3">
+                <label class="d-flex align-items-center gap-2 border rounded p-2 w-100">
+                  <input class="form-check-input br-char" type="checkbox" name="character_id" value="{{ c.character_id }}" checked>
+                  <img src="{{ c.portrait_url_32 }}" class="rounded" width="32" height="32" alt="">
+                  <span>{{ c.character_name }}</span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+          <button type="submit" class="btn btn-success"
+                  onclick="return confirm('Add selected characters to {{ target.label }}?');">
+            <i class="fas fa-user-plus"></i> Add selected to {{ target.label }}
+          </button>
+        </form>
+      {% else %}
+        <p class="mb-0 text-muted">Nothing to add — every character with a valid token is already registered.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if missing %}
+  <div class="card mb-3">
+    <div class="card-header">Need a new token (log in once via {{ target.label }})</div>
+    <div class="card-body">
+      {% for c in missing %}<span class="badge text-bg-warning me-1 mb-1">{{ c.character_name }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if registered %}
+  <div class="card mb-3">
+    <div class="card-header">Already in {{ target.label }}</div>
+    <div class="card-body">
+      {% for c in registered %}<span class="badge text-bg-secondary me-1 mb-1">{{ c.character_name }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+<script>
+  function toggleAll(state) {
+    document.querySelectorAll('.br-char').forEach(cb => cb.checked = state);
+  }
+</script>
+{% endblock %}
