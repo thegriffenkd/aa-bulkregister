@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter
 from allianceauth.services.hooks import get_extension_logger
+from esi.decorators import token_required
 from esi.models import Token
 
 logger = get_extension_logger(__name__)
@@ -264,3 +265,56 @@ def register_all(request):
         "%s bulk-registered %d character(s) in %s", request.user, len(added), target.key
     )
     return redirect(f"{reverse('bulkregister:index')}?target={target.key}")
+
+
+def combined_scopes(user):
+    scopes = set()
+    for target in available_targets(user):
+        scopes.update(target.scopes())
+    return sorted(scopes)
+
+
+@login_required
+def login_both(request):
+    """One EVE SSO login requesting the scopes of every app the user can use,
+    then registers the character in all of them straight away."""
+    targets = available_targets(request.user)
+    if not targets:
+        return redirect("bulkregister:index")
+
+    @token_required(new=True, scopes=combined_scopes(request.user))
+    def _inner(request, token):
+        char_id = token.character_id
+        eve_character = EveCharacter.objects.filter(character_id=char_id).first()
+        if eve_character is None:
+            eve_character = EveCharacter.objects.create_character(char_id)
+
+        owned = CharacterOwnership.objects.filter(
+            user=request.user, character=eve_character
+        ).exists()
+        if not owned:
+            messages.error(
+                request,
+                f"{eve_character} is not owned by your account, so it was not registered.",
+            )
+            return redirect("bulkregister:index")
+
+        done, failed = [], []
+        for target in targets:
+            try:
+                target.register(eve_character, countdown=0)
+                target.after_all(request.user)
+                done.append(target.label)
+            except Exception:
+                logger.exception("login_both failed for %s in %s", eve_character, target.key)
+                failed.append(target.label)
+
+        if done:
+            messages.success(
+                request, f"{eve_character} registered in {' and '.join(done)}."
+            )
+        if failed:
+            messages.error(request, f"{eve_character} failed in {', '.join(failed)}.")
+        return redirect("bulkregister:index")
+
+    return _inner(request)

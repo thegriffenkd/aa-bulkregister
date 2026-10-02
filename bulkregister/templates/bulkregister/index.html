@@ -6,6 +6,16 @@
 {% block content %}
 <div class="container-fluid">
 
+  {% if targets|length > 1 %}
+  <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span>Adding a new character? One EVE login registers it in
+      {% for t in targets %}{{ t.label }}{% if not forloop.last %} and {% endif %}{% endfor %} at once.</span>
+    <a class="btn btn-primary" href="{% url 'bulkregister:login_both' %}">
+      <i class="fas fa-sign-in-alt"></i> Log in for both
+    </a>
+  </div>
+  {% endif %}
+
   <ul class="nav nav-tabs mb-3">
     {% for t in targets %}
       <li class="nav-item">
