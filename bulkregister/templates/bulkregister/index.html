@@ -17,12 +17,12 @@
 
   <div class="row mb-3">
     <div class="col-auto"><span class="badge text-bg-success fs-6">Ready: {{ ready|length }}</span></div>
-    <div class="col-auto"><span class="badge text-bg-secondary fs-6">Already added: {{ registered|length }}</span></div>
+    <div class="col-auto"><span class="badge text-bg-secondary fs-6">Already added (healthy): {{ registered|length }}</span></div>
     <div class="col-auto"><span class="badge text-bg-warning fs-6">Need new token: {{ missing|length }}</span></div>
   </div>
 
   <div class="card mb-3">
-    <div class="card-header">Ready to add to {{ target.label }}</div>
+    <div class="card-header">Ready to add / re-register in {{ target.label }}</div>
     <div class="card-body">
       {% if ready %}
         <form method="post" action="{% url 'bulkregister:register_all' %}">

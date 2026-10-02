@@ -72,13 +72,31 @@ class MemberAuditTarget(Target):
 
     @staticmethod
     def registered_ids(character_ids):
+        """Registered AND healthy. Disabled or token-error characters are
+        treated as not registered, so they get re-registered (same as the
+        Member Audit menu badge logic)."""
+        from django.db.models import Q
+
         from memberaudit.models import Character
 
-        return set(
+        enabled_sections = list(Character.UpdateSection.enabled_sections())
+        broken = set(
+            Character.objects.filter(eve_character__character_id__in=character_ids)
+            .filter(
+                Q(
+                    update_status_set__section__in=enabled_sections,
+                    update_status_set__has_token_error=True,
+                )
+                | Q(is_disabled=True)
+            )
+            .values_list("eve_character__character_id", flat=True)
+        )
+        registered = set(
             Character.objects.filter(
-                eve_character__character_id__in=character_ids, is_disabled=False
+                eve_character__character_id__in=character_ids
             ).values_list("eve_character__character_id", flat=True)
         )
+        return registered - broken
 
     @staticmethod
     def register(eve_character, countdown):
